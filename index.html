@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>词力 Lexi · 英语跟读</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1628;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .container {
+    background: #0f2240;
+    border-radius: 32px;
+    padding: 32px 24px 40px;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    position: relative;
+  }
+
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 {
+    font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+  }
+
+  /* 等级 & 进度 */
+  .level-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.05);
+    padding: 4px 12px; border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .level-badge .lv {
+    background: #38bdf8; color: #0a1628;
+    padding: 2px 8px; border-radius: 10px;
+    font-weight: 600; font-size: 10px;
+  }
+  .progress-wrap {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .progress-track {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+  }
+  .progress-fill {
+    height: 3px; background: #38bdf8;
+    border-radius: 2px; transition: width 0.4s ease;
+  }
+  .progress-num {
+    font-size: 12px; color: rgba(255,255,255,0.35); white-space: nowrap;
+  }
+
+  /* 短语卡片 */
+  .phrase-card {
+    background: linear-gradient(145deg, #1a3a6b, #152d55);
+    border-radius: 24px;
+    padding: 32px 20px 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 0.5px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .phrase-check {
+    position: absolute; top: 16px; right: 16px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(34,197,94,0.2); border: 1px solid #22c55e;
+    display: none; align-items: center; justify-content: center;
+  }
+  .phrase-check.show { display: flex; }
+  .phrase-check svg { width: 14px; height: 14px; fill: #22c55e; }
+  .phrase-day {
+    font-size: 11px; color: rgba(255,255,255,0.3);
+    letter-spacing: 1.5px; margin-bottom: 16px;
+  }
+  .phrase-en {
+    font-size: 26px; font-weight: 700; color: #fff;
+    line-height: 1.35; letter-spacing: 0.3px; margin-bottom: 10px;
+  }
+  .phrase-phonetic {
+    font-size: 13px; color: #38bdf8; font-family: 'Courier New', monospace;
+    margin-bottom: 10px;
+  }
+  .phrase-cn {
+    font-size: 15px; color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.05);
+    display: inline-block; padding: 5px 16px;
+    border-radius: 20px;
+  }
+  .phrase-scene {
+    font-size: 12px; color: rgba(255,255,255,0.3);
+    margin-top: 12px; line-height: 1.6;
+  }
+
+  /* 听发音 */
+  .btn-listen {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; width: 100%; padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(56,189,248,0.3);
+    background: rgba(56,189,248,0.08);
+    color: #38bdf8; font-size: 14px; font-weight: 500;
+    cursor: pointer; margin-bottom: 12px;
+    transition: all 0.15s;
+  }
+  .btn-listen:active { background: rgba(56,189,248,0.15); }
+  .btn-listen.playing {
+    background: rgba(56,189,248,0.15);
+    animation: glow-border 1.5s ease-in-out infinite;
+  }
+  @keyframes glow-border {
+    0%,100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(56,189,248,0); }
+  }
+  .speaker-svg { width: 18px; height: 18px; fill: #38bdf8; }
+
+  /* 录音按钮 */
+  .btn-record {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; width: 100%; padding: 22px;
+    border-radius: 20px; border: none;
+    font-size: 17px; font-weight: 600;
+    cursor: pointer; position: relative;
+    touch-action: manipulation;
+    user-select: none;
+    transition: all 0.2s;
+  }
+  .btn-record.idle {
+    background: #38bdf8; color: #0a1628;
+    box-shadow: 0 4px 20px rgba(56,189,248,0.4);
+  }
+  .btn-record.recording {
+    background: #ef4444; color: #fff;
+    box-shadow: 0 4px 24px rgba(239,68,68,0.5);
+    animation: pulse-btn 0.8s ease-in-out infinite;
+  }
+  @keyframes pulse-btn {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+  .btn-record.done {
+    background: #22c55e; color: #fff;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+    opacity: 0.8;
+  }
+  .btn-record:disabled.idle {
+    background: #334155; color: #64748b;
+    box-shadow: none;
+  }
+  .mic-svg { width: 22px; height: 22px; fill: currentColor; flex-shrink: 0; }
+  .wave {
+    display: none; align-items: center; gap: 3px; margin-left: 6px;
+  }
+  .recording .wave { display: flex; }
+  .wv {
+    width: 3px; background: rgba(255,255,255,0.8);
+    border-radius: 2px;
+    animation: wave-anim 0.5s ease-in-out infinite;
+  }
+  .wv:nth-child(1){ height:8px;  animation-delay:0s; }
+  .wv:nth-child(2){ height:16px; animation-delay:0.08s; }
+  .wv:nth-child(3){ height:12px; animation-delay:0.16s; }
+  .wv:nth-child(4){ height:18px; animation-delay:0.1s; }
+  .wv:nth-child(5){ height:8px;  animation-delay:0.04s; }
+  @keyframes wave-anim {
+    0%,100%{ transform:scaleY(0.5); }
+    50%{ transform:scaleY(1); }
+  }
+
+  /* 结果区 */
+  .result-box {
+    margin-top: 16px; border-radius: 16px;
+    padding: 16px; font-size: 13px;
+    line-height: 1.8; display: none;
+  }
+  .result-box.show { display: block; }
+  .result-pass  { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+  .result-fail  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+  .result-maybe { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fde68a; }
+  .result-err   { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
+
+  .result-label {
+    font-weight: 600; font-size: 15px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .result-badge {
+    font-size: 11px; padding: 2px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.1); color: inherit;
+  }
+  .result-text {
+    font-family: 'Courier New', monospace;
+    background: rgba(255,255,255,0.07);
+    padding: 4px 10px; border-radius: 6px;
+    display: inline-block; margin: 2px 0; font-size: 13px;
+  }
+  .result-tip { font-size: 12px; opacity: 0.7; margin-top: 8px; }
+
+  /* 底部按钮 */
+  .nav-btns {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-top: 20px;
+  }
+  .btn-nav {
+    padding: 12px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    font-size: 14px; color: rgba(255,255,255,0.6);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-nav:active { background: rgba(255,255,255,0.1); }
+  .btn-nav.primary {
+    background: rgba(56,189,248,0.15);
+    border-color: rgba(56,189,248,0.3);
+    color: #38bdf8;
+  }
+  .btn-nav.primary:active { background: rgba(56,189,248,0.25); }
+  .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* 引导层 */
+  .guide-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.95);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 24px;
+  }
+  .guide-box {
+    background: #0f2240; border-radius: 24px;
+    padding: 32px 24px; max-width: 340px;
+    text-align: center; border: 1px solid rgba(56,189,248,0.2);
+  }
+  .guide-box h2 { color: #fff; font-size: 20px; margin-bottom: 8px; }
+  .guide-box p { color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.7; margin-bottom: 24px; }
+  .guide-icon { font-size: 48px; margin-bottom: 16px; }
+  .guide-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 14px 28px;
+    background: #38bdf8; color: #0a1628;
+    border-radius: 14px; font-size: 15px; font-weight: 600;
+    border: none; cursor: pointer; width: 100%;
+  }
+
+  /* 统计浮层 */
+  .stats-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.95);
+    display: none; align-items: center; justify-content: center;
+    z-index: 998; padding: 24px;
+  }
+  .stats-overlay.show { display: flex; }
+  .stats-box {
+    background: #0f2240; border-radius: 24px;
+    padding: 32px 24px; max-width: 340px; width: 100%;
+    text-align: center; border: 1px solid rgba(56,189,248,0.2);
+  }
+  .stats-box h2 { color: #fff; font-size: 18px; margin-bottom: 20px; }
+  .stat-row {
+    display: flex; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px; color: rgba(255,255,255,0.6);
+  }
+  .stat-val { color: #38bdf8; font-weight: 600; }
+  .close-btn {
+    margin-top: 20px; padding: 12px;
+    background: rgba(255,255,255,0.1);
+    border: none; border-radius: 12px;
+    color: #fff; font-size: 14px; cursor: pointer; width: 100%;
+  }
+
+  /* 难度弹窗 */
+  .level-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.95);
+    display: none; align-items: center; justify-content: center;
+    z-index: 997; padding: 24px;
+  }
+  .level-overlay.show { display: flex; }
+  .level-box {
+    background: #0f2240; border-radius: 24px;
+    padding: 32px 24px; max-width: 340px; width: 100%;
+    border: 1px solid rgba(56,189,248,0.2);
+  }
+  .level-box h2 { color: #fff; font-size: 18px; margin-bottom: 8px; text-align: center; }
+  .level-box p { color: rgba(255,255,255,0.4); font-size: 13px; text-align: center; margin-bottom: 20px; }
+  .level-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    margin-bottom: 10px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .level-option:hover, .level-option.selected {
+    border-color: #38bdf8;
+    background: rgba(56,189,248,0.1);
+  }
+  .level-option .lv-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .lv-easy { background: #22c55e; color: #fff; }
+  .lv-med { background: #eab308; color: #fff; }
+  .lv-hard { background: #ef4444; color: #fff; }
+  .lv-exp { background: #a855f7; color: #fff; }
+  .level-option .lv-info { text-align: left; }
+  .level-option .lv-name { color: #fff; font-size: 14px; font-weight: 600; }
+  .level-option .lv-desc { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 2px; }
+
+  .footer-hint {
+    text-align: center; font-size: 11px;
+    color: rgba(255,255,255,0.2); margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 麦克风授权引导 -->
+<div class="guide-overlay" id="guideOverlay">
+  <div class="guide-box">
+    <div class="guide-icon">🎙️</div>
+    <h2>需要麦克风权限</h2>
+    <p id="guideText">点击下方按钮，允许使用麦克风。<br>权限仅用于录制你的发音，不会泄露任何信息。</p>
+    <button class="guide-btn" id="btnGrant">允许使用麦克风</button>
+  </div>
+</div>
+
+<!-- 难度选择 -->
+<div class="level-overlay" id="levelOverlay">
+  <div class="level-box">
+    <h2>选择难度</h2>
+    <p>根据你的水平选择，可随时切换</p>
+    <div class="level-option" onclick="selectLevel(0)">
+      <div class="lv-num lv-easy">1</div>
+      <div class="lv-info">
+        <div class="lv-name">入门 · 日常短语</div>
+        <div class="lv-desc">3-6词，适合初学者</div>
+      </div>
+    </div>
+    <div class="level-option" onclick="selectLevel(1)">
+      <div class="lv-num lv-med">2</div>
+      <div class="lv-info">
+        <div class="lv-name">进阶 · 实用表达</div>
+        <div class="lv-desc">5-10词，中等难度</div>
+      </div>
+    </div>
+    <div class="level-option" onclick="selectLevel(2)">
+      <div class="lv-num lv-hard">3</div>
+      <div class="lv-info">
+        <div class="lv-name">熟练 · 长句对话</div>
+        <div class="lv-desc">7-15词，挑战进阶</div>
+      </div>
+    </div>
+    <div class="level-option" onclick="selectLevel(3)">
+      <div class="lv-num lv-exp">4</div>
+      <div class="lv-info">
+        <div class="lv-name">精通 · 情景对话</div>
+        <div class="lv-desc">完整对话，流利表达</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 统计浮层 -->
+<div class="stats-overlay" id="statsOverlay">
+  <div class="stats-box">
+    <h2>📊 学习统计</h2>
+    <div class="stat-row"><span>当前等级</span><span class="stat-val" id="statLevel">-</span></div>
+    <div class="stat-row"><span>总通过数</span><span class="stat-val" id="statPassed">-</span></div>
+    <div class="stat-row"><span>当前进度</span><span class="stat-val" id="statProgress">-</span></div>
+    <div class="stat-row"><span>连续打卡</span><span class="stat-val" id="statStreak">-</span></div>
+    <div class="stat-row"><span>今日练习</span><span class="stat-val" id="statToday">-</span></div>
+    <button class="close-btn" onclick="closeStats()">关闭</button>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div class="container">
+  <div class="header">
+    <h1>词力 Lexi · 每日跟读</h1>
+  </div>
+
+  <div class="level-badge" id="levelBadge">
+    <span class="lv" id="lvText">LV1</span>
+    <span id="levelName">入门 · 日常短语</span>
+    <span style="cursor:pointer;color:#38bdf8;" onclick="showLevelSelect()">⚙️</span>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-num" id="progressNum">0/30</div>
+  </div>
+
+  <div class="phrase-card">
+    <div class="phrase-check" id="checkIcon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+    <div class="phrase-day" id="dayBadge">Day 1</div>
+    <div class="phrase-en" id="phraseEn">Good to see you again.</div>
+    <div class="phrase-phonetic" id="phrasePhonetic">/ɡʊd tuː siː juː əˈɡɛn/</div>
+    <div class="phrase-cn" id="phraseCn">很高兴再次见到你。</div>
+    <div class="phrase-scene" id="phraseScene">见到熟人、同事或客户打招呼时，比 Hello 更有温度。</div>
+  </div>
+
+  <!-- 听标准发音 -->
+  <button class="btn-listen" id="btnListen">
+    <svg class="speaker-svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v0a4.5 4.5 0 00-6.04-3.98A5.5 5.5 0 0014 14.5v0a5.5 5.5 0 002.5-1.5z"/></svg>
+    <span id="listenText">听标准发音</span>
+  </button>
+
+  <!-- 录音主按钮 -->
+  <button class="btn-record idle" id="btnRecord">
+    <svg class="mic-svg" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15A.99.99 0 006.09 11H3v10c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V11h-3.09z"/></svg>
+    <span id="btnText">按住说话</span>
+    <div class="wave">
+      <div class="wv"></div><div class="wv"></div><div class="wv"></div><div class="wv"></div><div class="wv"></div>
+    </div>
+  </button>
+
+  <!-- 结果 -->
+  <div class="result-box" id="resultBox">
+    <div class="result-label" id="resultLabel"></div>
+    <div id="resultContent"></div>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn-nav" id="btnPrev" onclick="prevPhrase()">← 上一句</button>
+    <button class="btn-nav primary" id="btnNext" onclick="nextPhrase()">下一句 →</button>
+  </div>
+
+  <div class="footer-hint">
+    <span onclick="showStats()">📊 查看统计</span> · 长按说话，松开识别
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  词库 - 4个难度等级，每个30句
+// ════════════════════════════════════════════════════════════════════════════
+const PHRASES_DB = [
+  // ─── Level 1: 入门 · 日常短语（3-6词）───────────────────────────────────
+  [
+    { en:"Hello, how are you?", phonetic:"/həˈləʊ haʊ ɑː juː/", cn:"你好，你好吗？", scene:"最常见的打招呼方式。" },
+    { en:"Nice to meet you.", phonetic:"/naɪs tuː miːt juː/", cn:"很高兴认识你。", scene:"初次见面时的礼貌用语。" },
+    { en:"Good morning.", phonetic:"/ɡʊd ˈmɔːnɪŋ/", cn:"早上好。", scene:"早上到下午12点前的问候。" },
+    { en:"Good afternoon.", phonetic:"/ɡʊd ˌɑːftəˈnuːn/", cn:"下午好。", scene:"中午12点到傍晚的问候。" },
+    { en:"Good evening.", phonetic:"/ɡʊd ˈiːvnɪŋ/", cn:"晚上好。", scene:"傍晚到天黑后的问候。" },
+    { en:"Good night.", phonetic:"/ɡʊd naɪt/", cn:"晚安。", scene:"睡觉前道别。" },
+    { en:"Thank you very much.", phonetic:"/θæŋk juː ˈvɛri mʌtʃ/", cn:"非常感谢你。", scene:"表达感谢，比 Thank you 更有力。" },
+    { en:"You're welcome.", phonetic:"/jɔː ˈwɛlkəm/", cn:"不客气。", scene:"别人说谢谢后的标准回应。" },
+    { en:"I'm sorry.", phonetic:"/aɪm ˈsɒri/", cn:"对不起。", scene:"道歉时最简洁的表达。" },
+    { en:"That's okay.", phonetic:"/ðæts əʊˈkeɪ/", cn:"没关系。", scene:"回应别人的道歉，表示原谅。" },
+    { en:"Excuse me.", phonetic:"/ɪkˈskjuːz miː/", cn:"打扰一下。", scene:"需要引起注意或借过时。" },
+    { en:"How old are you?", phonetic:"/haʊ əʊld ɑː juː/", cn:"你多大了？", scene:"询问年龄。" },
+    { en:"What's your name?", phonetic:"/wɒts jɔː neɪm/", cn:"你叫什么名字？", scene:"询问对方名字。" },
+    { en:"My name is Tom.", phonetic:"/maɪ neɪm ɪz tɒm/", cn:"我叫汤姆。", scene:"自我介绍名字。" },
+    { en:"I like it.", phonetic:"/aɪ laɪk ɪt/", cn:"我喜欢它。", scene:"表达喜欢某物。" },
+    { en:"I don't know.", phonetic:"/aɪ dəʊnt nəʊ/", cn:"我不知道。", scene:"表示不知道答案。" },
+    { en:"I understand.", phonetic:"/aɪ ˌʌndəˈstænd/", cn:"我明白了。", scene:"表示理解了对方的意思。" },
+    { en:"See you later.", phonetic:"/siː juː ˈleɪtə/", cn:"回头见。", scene:"暂时道别，表示还会再见。" },
+    { en:"Have a nice day.", phonetic:"/hæv ə naɪs deɪ/", cn:"祝你有个美好的一天。", scene:"道别时送上祝福。" },
+    { en:"What time is it?", phonetic:"/wɒt taɪm ɪz ɪt/", cn:"现在几点了？", scene:"询问时间。" },
+    { en:"Where are you?", phonetic:"/weə ɑː juː/", cn:"你在哪里？", scene:"询问对方位置。" },
+    { en:"I'm hungry.", phonetic:"/aɪm ˈhʌŋɡri/", cn:"我饿了。", scene:"表达饥饿，想吃东西。" },
+    { en:"I'm tired.", phonetic:"/aɪm ˈtaɪəd/", cn:"我累了。", scene:"表达疲惫。" },
+    { en:"It's cold today.", phonetic:"/ɪts kəʊld təˈdeɪ/", cn:"今天很冷。", scene:"谈论天气。" },
+    { en:"I love you.", phonetic:"/aɪ lʌv juː/", cn:"我爱你。", scene:"表达爱意。" },
+    { en:"Call me later.", phonetic:"/kɔːl miː ˈleɪtə/", cn:"稍后打电话给我。", scene:"让别人晚点联系你。" },
+    { en:"Don't worry.", phonetic:"/dəʊnt ˈwʌri/", cn:"别担心。", scene:"安慰别人时。" },
+    { en:"Take it easy.", phonetic:"/teɪk ɪt ˈiːzi/", cn:"放轻松。", scene:"安慰紧张的人。" },
+    { en:"Be careful.", phonetic:"/biː ˈkɛəfl/", cn:"小心。", scene:"提醒别人注意安全。" },
+    { en:"Good luck.", phonetic:"/ɡʊd lʌk/", cn:"祝你好运。", scene:"祝福别人。" }
+  ],
+  // ─── Level 2: 进阶 · 实用表达（5-10词）──────────────────────────────────
+  [
+    { en:"How was your day?", phonetic:"/haʊ wɒz jɔː deɪ/", cn:"你今天过得怎么样？", scene:"下班回家或见到朋友时问候。" },
+    { en:"Nice weather today.", phonetic:"/naɪs ˈwɛðər təˈdeɪ/", cn:"今天天气真好。", scene:"跟人闲聊破冰。" },
+    { en:"I'll be right back.", phonetic:"/aɪl biː raɪt bæk/", cn:"我马上回来。", scene:"临时离开时。" },
+    { en:"Let me check on that.", phonetic:"/lɛt miː tʃɛk ɒn ðæt/", cn:"让我确认一下。", scene:"不确定时的专业回复。" },
+    { en:"Could you say that again?", phonetic:"/kʊd juː seɪ ðæt əˈɡɛn/", cn:"你能再说一遍吗？", scene:"礼貌请求重复。" },
+    { en:"That sounds great.", phonetic:"/ðæt saʊndz ɡreɪt/", cn:"那听起来很好。", scene:"认可对方建议。" },
+    { en:"I'm on my way.", phonetic:"/aɪm ɒn maɪ weɪ/", cn:"我在路上了。", scene:"回复催你到了没。" },
+    { en:"No problem at all.", phonetic:"/nəʊ ˈprɒbləm æt ɔːl/", cn:"完全没问题。", scene:"友好的回应。" },
+    { en:"Have a good one.", phonetic:"/hæv ə ɡʊd wʌn/", cn:"祝你有个好日子。", scene:"道别，比 Goodbye 更地道。" },
+    { en:"What time works for you?", phonetic:"/wɒt taɪm wɜːks fɔː juː/", cn:"你什么时间方便？", scene:"约会议或约饭。" },
+    { en:"I'll get back to you.", phonetic:"/aɪl ɡɛt bæk tuː juː/", cn:"我稍后回复你。", scene:"暂时无法给答复。" },
+    { en:"Sounds like a plan.", phonetic:"/saʊndz laɪk ə plæn/", cn:"就这么定了。", scene:"确认约定。" },
+    { en:"Take care of yourself.", phonetic:"/teɪk kɛr ɒv jɔːˈsɛlf/", cn:"好好保重。", scene:"道别时表达关心。" },
+    { en:"It was nice meeting you.", phonetic:"/ɪt wɒz naɪs ˈmiːtɪŋ juː/", cn:"很高兴认识你。", scene:"初次见面道别。" },
+    { en:"Can I help you with that?", phonetic:"/kæn aɪ hɛlp juː wɪð ðæt/", cn:"我能帮你一起做吗？", scene:"主动提供帮助。" },
+    { en:"I totally agree.", phonetic:"/aɪ ˈtəʊtəli əˈɡriː/", cn:"我完全同意。", scene:"强烈赞同。" },
+    { en:"Let's keep in touch.", phonetic:"/lɛts kiːp ɪn tʌtʃ/", cn:"保持联系。", scene:"希望维持联系。" },
+    { en:"You did a great job.", phonetic:"/juː dɪd ə ɡreɪt dʒɒb/", cn:"你做得很好。", scene:"夸奖别人。" },
+    { en:"I appreciate your help.", phonetic:"/aɪ əˈpriːʃɪeɪt jɔː hɛlp/", cn:"非常感谢你的帮助。", scene:"正式感谢。" },
+    { en:"What do you think?", phonetic:"/wɒt duː juː θɪŋk/", cn:"你觉得怎么样？", scene:"征求对方意见。" },
+    { en:"I'm looking forward to it.", phonetic:"/aɪm ˈlʊkɪŋ ˈfɔːwəd tuː ɪt/", cn:"我很期待。", scene:"表达期待。" },
+    { en:"See you tomorrow.", phonetic:"/siː juː təˈmɒrəʊ/", cn:"明天见。", scene:"日常道别。" },
+    { en:"Is everything okay?", phonetic:"/ɪz ˈɛvrɪθɪŋ ˈəʊkeɪ/", cn:"一切都好吗？", scene:"关心对方。" },
+    { en:"I'll take care of it.", phonetic:"/aɪl teɪk kɛr ɒv ɪt/", cn:"我来处理这件事。", scene:"主动承担任务。" },
+    { en:"Not a big deal.", phonetic:"/nɒt ə bɪɡ diːl/", cn:"没什么大不了的。", scene:"轻描淡写某件事。" },
+    { en:"Let me know if you need anything.", phonetic:"/lɛt miː nəʊ ɪf juː niːd ˈɛnɪθɪŋ/", cn:"有什么需要随时告诉我。", scene:"表达愿意帮助。" },
+    { en:"Have a safe trip.", phonetic:"/hæv ə seɪf trɪp/", cn:"一路平安。", scene:"送别出行的人。" },
+    { en:"Good luck with that.", phonetic:"/ɡʊd lʌk wɪð ðæt/", cn:"祝你顺利。", scene:"真诚祝福。" },
+    { en:"Good to see you again.", phonetic:"/ɡʊd tuː siː juː əˈɡɛn/", cn:"很高兴再次见到你。", scene:"见到熟人时打招呼。" },
+    { en:"What's for dinner?", phonetic:"/wɒts fɔː ˈdɪnə/", cn:"晚饭吃什么？", scene:"询问晚餐。" }
+  ],
+  // ─── Level 3: 熟练 · 长句对话（7-15词）─────────────────────────────────
+  [
+    { en:"Could you please help me with this?", phonetic:"/kʊd juː pliːz hɛlp miː wɪð ðɪs/", cn:"请问你能帮我一下吗？", scene:"礼貌请求帮助。" },
+    { en:"I'm not sure I understand what you mean.", phonetic:"/aɪm nɒt ʃʊə aɪ ˌʌndəˈstænd wɒt juː miːn/", cn:"我不太确定我理解你的意思。", scene:"没听懂时礼貌回应。" },
+    { en:"Would you mind turning down the music?", phonetic:"/wʊd juː maɪnd ˈtɜːnɪŋ daʊn ðə ˈmjuːzɪk/", cn:"你介意把音乐关小一点吗？", scene:"委婉请求别人做某事。" },
+    { en:"I was wondering if you have time tomorrow.", phonetic:"/aɪ wɒz ˈwʌndərɪŋ ɪf juː hæv taɪm təˈmɒrəʊ/", cn:"我想知道明天你有没有空。", scene:"委婉询问是否有时间。" },
+    { en:"It's been a while since I last saw you.", phonetic:"/ɪts biːn ə waɪl sɪns aɪ lɑːst sɔː juː/", cn:"好久不见了。", scene:"见到很久没见的朋友。" },
+    { en:"I would appreciate it if you could reply soon.", phonetic:"/aɪ wʊd əˈpriːʃɪeɪt ɪt ɪf juː kʊd rɪˈplaɪ suːn/", cn:"如果你能尽快回复，我将不胜感激。", scene:"请求尽快回复，非常礼貌。" },
+    { en:"Do you have any plans for the weekend?", phonetic:"/duː juː hæv ˈɛni plænz fɔː ðə ˈwiːkɛnd/", cn:"周末你有什么计划吗？", scene:"闲聊话题。" },
+    { en:"I've been thinking about changing my job.", phonetic:"/aɪv biːn ˈθɪŋkɪŋ əˈbaʊt ˈtʃeɪndʒɪŋ maɪ dʒɒb/", cn:"我一直在考虑换工作。", scene:"跟朋友聊职业规划。" },
+    { en:"Can you recommend a good restaurant nearby?", phonetic:"/kæn juː ˌrɛkəˈmɛnd ə ɡʊd ˈrɛstrɒnt ˌnɪəˈbaɪ/", cn:"你能推荐一家附近的好餐厅吗？", scene:"向他人寻求推荐。" },
+    { en:"I need to make an appointment with the doctor.", phonetic:"/aɪ niːd tuː meɪk ən əˈpɔɪntmənt wɪð ðə ˈdɒktə/", cn:"我需要预约医生。", scene:"表达需要看医生。" },
+    { en:"What do you usually do in your free time?", phonetic:"/wɒt duː juː ˈjuːʒʊəli duː ɪn jɔː friː taɪm/", cn:"你空闲时间通常做什么？", scene:"了解对方的兴趣爱好。" },
+    { en:"I can't believe this happened to me.", phonetic:"/aɪ kɑːnt bɪˈliːv ðɪs ˈhæpənd tuː miː/", cn:"我不敢相信这发生在我身上。", scene:"表达惊讶或震惊。" },
+    { en:"Would you like to grab a cup of coffee?", phonetic:"/wʊd juː laɪk tuː ɡræb ə kʌp ɒv ˈkɒfi/", cn:"你想喝杯咖啡吗？", scene:"邀请别人喝咖啡。" },
+    { en:"I think we should discuss this in more detail.", phonetic:"/aɪ θɪŋk wiː ʃʊd dɪsˈkʌs ðɪs ɪn mɔːr ˈdiːteɪl/", cn:"我觉得我们应该更详细地讨论一下。", scene:"工作会议上深入讨论。" },
+    { en:"Could you give me a hand with this report?", phonetic:"/kʊd juː ɡɪv miː ə hænd wɪð ðɪs rɪˈpɔːt/", cn:"你能帮我看一下这份报告吗？", scene:"请求同事帮忙。" },
+    { en:"I'm running a bit late, can we reschedule?", phonetic:"/aɪm ˈrʌnɪŋ ə bɪt leɪt kæn wiː ˌriːˈʃɛdʒuːl/", cn:"我要迟到了，我们能改时间吗？", scene:"需要改约时。" },
+    { en:"Let me think about it and get back to you.", phonetic:"/lɛt miː θɪŋk əˈbaʊt ɪt ænd ɡɛt bæk tuː juː/", cn:"让我考虑一下再回复你。", scene:"需要时间考虑时。" },
+    { en:"It's not as difficult as I thought it would be.", phonetic:"/ɪts nɒt æz ˈdɪfɪkəlt æz aɪ θɔːt ɪt wʊd biː/", cn:"它没有我想象的那么难。", scene:"完成任务后感慨。" },
+    { en:"I was hoping we could meet sometime this week.", phonetic:"/aɪ wɒz ˈhəʊpɪŋ wiː kʊd miːt ˈsʌmtaɪm ðɪs wiːk/", cn:"我希望这周能找个时间见面。", scene:"约见面时间。" },
+    { en:"Could you explain that one more time, please?", phonetic:"/kʊd juː ɪkˈspleɪn ðæt wʌn mɔːr taɪm pliːz/", cn:"能请你再解释一遍吗？", scene:"没听懂请求再讲。" },
+    { en:"I'm afraid I don't agree with you on this point.", phonetic:"/aɪm əˈfreɪd aɪ dəʊnt əˈɡriː wɪð juː ɒn ðɪs pɔɪnt/", cn:"恐怕在这一点上我不同意你的看法。", scene:"委婉表达不同意。" },
+    { en:"That's exactly what I was trying to say.", phonetic:"/ðæts ɪɡˈzæktli wɒt aɪ wɒz ˈtraɪɪŋ tuː seɪ/", cn:"这正是我想说的。", scene:"表示认同对方的表达。" },
+    { en:"I didn't mean to hurt your feelings.", phonetic:"/aɪ ˈdɪdnt miːn tuː hɜːt jɔː ˈfiːlɪŋz/", cn:"我不是故意要伤害你的感情。", scene:"道歉或解释误会。" },
+    { en:"Would it be possible to move the meeting to Friday?", phonetic:"/wʊd ɪt biː ˈpɒsəbl tuː muːv ðə ˈmiːtɪŋ tuː ˈfraɪdeɪ/", cn:"可以把会议改到周五吗？", scene:"请求调整会议时间。" },
+    { en:"I've been looking forward to this trip for months.", phonetic:"/aɪv biːn ˈlʊkɪŋ ˈfɔːwəd tuː ðɪs trɪp fɔː mʌnθs/", cn:"我期待这次旅行好几个月了。", scene:"表达期待旅行。" },
+    { en:"Can you tell me more about your experience?", phonetic:"/kæn juː tɛl miː mɔːr əˈbaʊt jɔːr ɪkˈspɪəriəns/", cn:"能多告诉我一些关于你的经历吗？", scene:"面试或聊天时深入了解。" },
+    { en:"I think you might have misunderstood what I said.", phonetic:"/aɪ θɪŋk juː maɪt hæv ˌmɪsʌndəˈstʊd wɒt aɪ sɛd/", cn:"我觉得你可能误解了我的意思。", scene:"澄清误会。" },
+    { en:"We need to come up with a better solution.", phonetic:"/wiː niːd tuː kʌm ʌp wɪð ə ˈbɛtə səˈluːʃən/", cn:"我们需要想出一个更好的解决方案。", scene:"讨论问题时。" },
+    { en:"I was just about to call you when you called me.", phonetic:"/aɪ wɒz dʒʌst əˈbaʊt tuː kɔːl juː wɛn juː kɔːld miː/", cn:"我正要给你打电话你就打来了。", scene:"巧合相遇时。" },
+    { en:"Could I borrow your pen for a moment?", phonetic:"/kʊd aɪ ˈbɒrəʊ jɔːr pɛn fɔːr ə ˈməʊmənt/", cn:"我能借你的笔用一下吗？", scene:"临时借东西。" }
+  ],
+  // ─── Level 4: 精通 · 情景对话（完整对话片段）───────────────────────────
+  [
+    { en:"Welcome! How can I help you today?", phonetic:"/ˈwɛlkəm haʊ kæn aɪ hɛlp juː təˈdeɪ/", cn:"欢迎！今天有什么可以帮您的？", scene:"服务场景中欢迎顾客。" },
+    { en:"I'm looking for a birthday gift for my friend.", phonetic:"/aɪm ˈlʊkɪŋ fɔːr ə ˈbɜːθdeɪ ɡɪft fɔːr maɪ frɛnd/", cn:"我想给我朋友买件生日礼物。", scene:"购物场景中说明需求。" },
+    { en:"What size do you wear? I can check if we have it in stock.", phonetic:"/wɒt saɪz duː juː weə aɪ kæn tʃɛk ɪf wiː hæv ɪt ɪn stɒk/", cn:"您穿什么尺码？我可以查一下有没有库存。", scene:"服装购物场景。" },
+    { en:"I'd like to make a reservation for two people at 7 o'clock.", phonetic:"/aɪd laɪk tuː meɪk ə ˌrɛzəˈveɪʃən fɔːr tuː ˈpiːpl æt ˈsɛvən əˈklɒk/", cn:"我想预约晚上7点，两位。", scene:"餐厅预约场景。" },
+    { en:"Do you have any vegetarian options on your menu?", phonetic:"/duː juː hæv ˈɛni ˌvɛdʒɪˈteəriən ˈɒpʃənz ɒn jɔːr ˈmɛnjuː/", cn:"你们菜单上有素食选项吗？", scene:"点餐时询问。" },
+    { en:"Excuse me, could I get the check please?", phonetic:"/ɪkˈskjuːz miː kʊd aɪ ɡɛt ðə tʃɛk pliːz/", cn:"打扰一下，可以买单吗？", scene:"用餐结束结账。" },
+    { en:"I'm here to check in. I have a reservation under the name Li.", phonetic:"/aɪm hɪə tuː tʃɛk ɪn aɪ hæv ə ˌrɛzəˈveɪʃən ˈʌndə ðə neɪm liː/", cn:"我来办理入住，预约名是李。", scene:"酒店入住场景。" },
+    { en:"Could you wake me up at 6 o'clock tomorrow morning?", phonetic:"/kʊd juː weɪk miː ʌp æt ˈsɪks əˈklɒk təˈmɒrəʊ ˈmɔːnɪŋ/", cn:"明天早上6点能叫我起床吗？", scene:"酒店要求叫醒服务。" },
+    { en:"I'd like to report a problem with the air conditioning in my room.", phonetic:"/aɪd laɪk tuː rɪˈpɔːt ə ˈprɒbləm wɪð ðeər kənˈdɪʃənɪŋ ɪn maɪ ruːm/", cn:"我想反映一下我房间空调的问题。", scene:"酒店投诉场景。" },
+    { en:"I need to catch a flight to Beijing tomorrow morning.", phonetic:"/aɪ niːd tuː kætʃ ə flaɪt tuː ˈbeɪˈdʒɪŋ təˈmɒrəʊ ˈmɔːnɪŋ/", cn:"我明天早上要赶飞北京的航班。", scene:"机场/交通场景。" },
+    { en:"How long does it take to get to the airport from here?", phonetic:"/haʊ lɒŋ dʌz ɪt teɪk tuː ɡɛt tuː ðeər ˈɛəpɔːt frɒm hɪə/", cn:"从这里到机场要多久？", scene:"询问路程时间。" },
+    { en:"I missed my connecting flight. What should I do now?", phonetic:"/aɪ mɪst maɪ kəˈnɛktɪŋ flaɪt wɒt ʃʊd aɪ duː naʊ/", cn:"我错过了转机航班，现在该怎么办？", scene:"航班延误/误机场景。" },
+    { en:"I'd like to open a savings account at your bank.", phonetic:"/aɪd laɪk tuː ˈəʊpən ə ˈseɪvɪŋz əˈkaʊnt æt jɔː bæŋk/", cn:"我想在你们银行开一个储蓄账户。", scene:"银行开户场景。" },
+    { en:"Could you tell me what the interest rate is for this account?", phonetic:"/kʊd juː tɛl miː wɒt ði ˈɪntrɪst reɪt ɪz fɔːr ðɪs əˈkaʊnt/", cn:"能告诉我这个账户的利率是多少吗？", scene:"银行咨询场景。" },
+    { en:"I'm experiencing some pain in my lower back.", phonetic:"/aɪm ɪkˈspɪəriənsɪŋ sʌm peɪn ɪn maɪ ˈləʊə bæk/", cn:"我腰背部有些疼痛。", scene:"医院看病场景。" },
+    { en:"How often should I take this medicine?", phonetic:"/haʊ ˈɒfn ʃʊd aɪ teɪk ðɪs ˈmɛdɪsɪn/", cn:"这个药我应该多久吃一次？", scene:"医生开药后询问。" },
+    { en:"I'd like to apply for this position. Could you tell me more about it?", phonetic:"/aɪd laɪk tuː əˈplaɪ fɔːr ðɪs pəˈzɪʃən kʊd juː tɛl miː mɔːr əˈbaʊt ɪt/", cn:"我想申请这个职位，能多介绍一下吗？", scene:"求职面试场景。" },
+    { en:"Could you walk me through a typical day in this role?", phonetic:"/kʊd juː wɔːk miː θruː ə ˈtɪpɪkəl deɪ ɪn ðɪs rəʊl/", cn:"能给我介绍一下这个职位的日常工作吗？", scene:"面试时了解工作内容。" },
+    { en:"What are the main challenges facing your company right now?", phonetic:"/wɒt ɑːr ðə meɪn ˈtʃælɪndʒɪz ˈfeɪsɪŋ jɔː ˈkʌmpəni raɪt naʊ/", cn:"贵公司目前面临的主要挑战是什么？", scene:"面试反问环节。" },
+    { en:"I'm calling about the apartment I saw advertised online.", phonetic:"/aɪm ˈkɔːlɪŋ əˈbaʊt ðeər əˈpɑːtmənt aɪ sɔːr ˈædvətaɪzd ˈɒnˌlaɪn/", cn:"我打电话是想咨询网上看到的那套公寓。", scene:"租房咨询场景。" },
+    { en:"Is the rent inclusive of utilities, or are they extra?", phonetic:"/ɪz ðə rɛnt ɪnˈkluːsɪv ɒv juːˈtɪlɪtiz ɔːr ɑːr ðeɪ ˈɛkstrə/", cn:"租金包含水电费吗，还是另算？", scene:"租房时询问费用。" },
+    { en:"Could I schedule a viewing for this Saturday afternoon?", phonetic:"/kʊd aɪ ˈʃɛdjuːl ə ˈvjuːɪŋ fɔːr ðɪs ˈsætədeɪ ˌɑːftəˈnuːn/", cn:"我能约这周六下午看房吗？", scene:"预约看房。" },
+    { en:"I'd like to file a complaint about the noise from the apartment above.", phonetic:"/aɪd laɪk tuː faɪl ə kəmˈpleɪnt əˈbaʊt ðə nɔɪz frɒm ðeər əˈpɑːtmənt əˈbʌv/", cn:"我想投诉楼上公寓的噪音问题。", scene:"物业投诉场景。" },
+    { en:"I'm having trouble connecting to the Wi-Fi in my room.", phonetic:"/aɪm ˈhævɪŋ ˈtrʌbl kəˈnɛktɪŋ tuː ðə ˈwaɪfaɪ ɪn maɪ ruːm/", cn:"我房间的Wi-Fi连不上。", scene:"酒店/公寓报修。" },
+    { en:"Could you recommend some local attractions worth visiting?", phonetic:"/kʊd juː ˌrɛkəˈmɛnd sʌm ˈləʊkəl əˈtrækʃənz wɜːθ ˈvɪzɪtɪŋ/", cn:"能推荐一些值得去的当地景点吗？", scene:"旅游咨询场景。" },
+    { en:"I'd like to return this item. It's defective.", phonetic:"/aɪd laɪk tuː rɪˈtɜːn ðɪs ˈaɪtəm ɪts dɪˈfɛktɪv/", cn:"我想退这个商品，它有质量问题。", scene:"购物退货场景。" },
+    { en:"Do you offer a refund, or can I exchange it for another one?", phonetic:"/duː juː ˈɒfər ə ˈriːfʌnd ɔːr kæn aɪ ɪksˈtʃeɪndʒ ɪt fɔːr əˈnʌðə wʌn/", cn:"你们能退款吗，或者我可以换一个吗？", scene:"购物退换场景。" },
+    { en:"I'm interested in taking an English course. Do you have beginner classes?", phonetic:"/aɪm ˈɪntrɪstɪd ɪn ˈteɪkɪŋ ən ˈɪŋɡlɪʃ kɔːs duː juː hæv bɪˈɡɪnə ˈklɑːsɪz/", cn:"我想报英语课程，你们有初级班吗？", scene:"教育机构咨询。" },
+    { en:"What are the class hours, and how much does it cost?", phonetic:"/wɒt ɑːr ðə klɑːs ˈaʊəz ænd haʊ mʌtʃ dʌz ɪt kɒst/", cn:"上课时间是什么时候，费用是多少？", scene:"咨询课程详情。" },
+    { en:"Could I get a copy of the contract to review before signing?", phonetic:"/kʊd aɪ ɡɛt ə ˈkɒpi ɒv ðə ˈkɒntrækt tuː rɪˈvjuː bɪˈfɔː ˈsaɪnɪŋ/", cn:"我能拿一份合同先看一下再签吗？", scene:"签署合同前仔细阅读。" }
+  ]
+];
+
+const LEVEL_NAMES = [
+  "入门 · 日常短语",
+  "进阶 · 实用表达",
+  "熟练 · 长句对话",
+  "精通 · 情景对话"
+];
+
+const LEVEL_SHORT = ["LV1", "LV2", "LV3", "LV4"];
+
+// ════════════════════════════════════════════════════════════════════════════
+//  状态管理 + localStorage
+// ════════════════════════════════════════════════════════════════════════════
+let state = loadState();
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let mediaStream = null;
+let recordingTimer = null;
+let micGranted = false;
+let recognition = null;  // Web Speech API
+let currentLevel = state.level || 0;
+let currentIndex = state.index || 0;
+let passedToday = 0;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('lexi_state');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return { level: 0, index: 0, passed: {}, streak: 0, lastDate: '', todayPassed: 0 };
+}
+
+function saveState() {
+  localStorage.setItem('lexi_state', JSON.stringify(state));
+}
+
+function recordPass(index) {
+  const key = `L${currentLevel}_D${index}`;
+  if (!state.passed[key]) {
+    state.passed[key] = true;
+    state.todayPassed = (state.todayPassed || 0) + 1;
+    saveState();
+  }
+}
+
+function isPassed(index) {
+  return !!state.passed[`L${currentLevel}_D${index}`];
+}
+
+function getPassedCount() {
+  let count = 0;
+  for (let i = 0; i < PHRASES_DB[currentLevel].length; i++) {
+    if (isPassed(i)) count++;
+  }
+  return count;
+}
+
+function checkNewDay() {
+  const today = new Date().toDateString();
+  if (state.lastDate !== today) {
+    if (state.lastDate) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (state.lastDate === yesterday.toDateString() && state.todayPassed > 0) {
+        state.streak = (state.streak || 0) + 1;
+      } else if (state.todayPassed > 0) {
+        // 断了一天以上，重新计算
+        state.streak = 1;
+      } else {
+        state.streak = 0;
+      }
+    }
+    state.lastDate = today;
+    state.todayPassed = 0;
+    saveState();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  语音引擎：Web Speech API（纯前端）
+// ════════════════════════════════════════════════════════════════════════════
+
+// --- TTS：浏览器语音合成 ---
+function speak(text) {
+  if (!window.speechSynthesis) return false;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = 0.85;
+  u.pitch = 1;
+  window.speechSynthesis.speak(u);
+  return true;
+}
+
+function stopSpeaking() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+// --- ASR：浏览器语音识别 ---
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'en-US';
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+  r.continuous = false;
+  return r;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  麦克风授权
+// ════════════════════════════════════════════════════════════════════════════
+async function grantMicrophone() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    micGranted = true;
+    document.getElementById('guideOverlay').style.display = 'none';
+    document.getElementById('btnRecord').disabled = false;
+    // 预初始化语音识别
+    if (!recognition) recognition = initRecognition();
+  } catch(err) {
+    document.getElementById('guideText').innerHTML =
+      '麦克风权限被拒绝。<br>请在浏览器设置 → 隐私 → 麦克风 → 允许本网站。';
+    document.getElementById('btnGrant').textContent = '再次尝试';
+  }
+}
+
+document.getElementById('btnGrant').addEventListener('click', grantMicrophone);
+
+// ════════════════════════════════════════════════════════════════════════════
+//  听标准发音
+// ════════════════════════════════════════════════════════════════════════════
+let isSpeaking = false;
+
+document.getElementById('btnListen').addEventListener('click', () => {
+  const phrase = PHRASES_DB[currentLevel][currentIndex];
+  const btn = document.getElementById('btnListen');
+
+  if (isSpeaking) {
+    stopSpeaking();
+    isSpeaking = false;
+    btn.classList.remove('playing');
+    document.getElementById('listenText').textContent = '听标准发音';
+    return;
+  }
+
+  if (speak(phrase.en)) {
+    isSpeaking = true;
+    btn.classList.add('playing');
+    document.getElementById('listenText').textContent = '播放中...';
+    // 监听结束
+    const checkEnd = setInterval(() => {
+      if (!window.speechSynthesis.speaking) {
+        clearInterval(checkEnd);
+        isSpeaking = false;
+        btn.classList.remove('playing');
+        document.getElementById('listenText').textContent = '听标准发音';
+      }
+    }, 200);
+  } else {
+    document.getElementById('listenText').textContent = '浏览器不支持语音';
+    setTimeout(() => {
+      document.getElementById('listenText').textContent = '听标准发音';
+    }, 2000);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  录音 & 识别
+// ════════════════════════════════════════════════════════════════════════════
+const btnRecord = document.getElementById('btnRecord');
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  if (!micGranted) { grantMicrophone(); return; }
+  if (isRecording) return;
+  _startRecording();
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  if (isRecording) _stopRecording();
+}
+
+btnRecord.addEventListener('touchstart', handleTouchStart, { passive: false });
+btnRecord.addEventListener('touchend', handleTouchEnd, { passive: false });
+btnRecord.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  if (!micGranted) { grantMicrophone(); return; }
+  if (!isRecording) _startRecording();
+});
+btnRecord.addEventListener('mouseup', (e) => {
+  e.preventDefault();
+  if (isRecording) _stopRecording();
+});
+btnRecord.addEventListener('selectstart', (e) => e.preventDefault());
+
+function _startRecording() {
+  isRecording = true;
+  audioChunks = [];
+
+  // 优先用 Web Speech API（识别率更高）
+  if (!recognition) recognition = initRecognition();
+
+  if (recognition) {
+    // 方案1：Web Speech API 语音识别
+    _startWebSpeech();
+  } else {
+    // 方案2：MediaRecorder + 简单识别（fallback）
+    _startMediaRecorder();
+  }
+}
+
+// --- Web Speech API 方案 ---
+let speechResult = '';
+let speechError = '';
+
+function _startWebSpeech() {
+  speechResult = '';
+  speechError = '';
+
+  recognition.onstart = () => {
+    btnRecord.className = 'btn-record recording';
+    document.getElementById('btnText').textContent = '松开结束';
+  };
+
+  recognition.onresult = (e) => {
+    if (e.results.length > 0) {
+      speechResult = e.results[0][0].transcript;
+    }
+  };
+
+  recognition.onerror = (e) => {
+    speechError = e.error;
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      // 用户还没松手就结束了（浏览器限制约5-10秒）
+      isRecording = false;
+      _processResult(speechResult, speechError);
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch(e) {
+    // 可能已经在运行，用 MediaRecorder fallback
+    _startMediaRecorder();
+  }
+}
+
+function _stopRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearTimeout(recordingTimer);
+
+  if (recognition && recognition.state === 'running') {
+    try { recognition.stop(); } catch(e) {}
+  }
+
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
+// --- MediaRecorder fallback ---
+async function _startMediaRecorder() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(err) {
+    showResult('err', '无法访问麦克风，请检查权限');
+    isRecording = false;
+    return;
+  }
+
+  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+    ? 'audio/webm;codecs=opus'
+    : MediaRecorder.isTypeSupported('audio/webm')
+    ? 'audio/webm'
+    : 'audio/ogg';
+
+  try {
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+  } catch(e) {
+    mediaRecorder = new MediaRecorder(mediaStream);
+  }
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) audioChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = () => {
+    // MediaRecorder fallback 无法自动识别文字
+    // 提示用户用 Web Speech API（需要HTTPS）
+    showResult('err', '当前环境不支持语音识别。\n请用 Chrome/Safari 浏览器打开本页面（需HTTPS）。');
+    _cleanup();
+  };
+
+  mediaRecorder.start(100);
+  btnRecord.className = 'btn-record recording';
+  document.getElementById('btnText').textContent = '松开结束';
+
+  recordingTimer = setTimeout(() => {
+    if (isRecording) _stopRecording();
+  }, 8000);
+}
+
+function _cleanup() {
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  stopSpeaking();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  处理识别结果
+// ════════════════════════════════════════════════════════════════════════════
+function _processResult(text, error) {
+  btnRecord.className = 'btn-record idle';
+  document.getElementById('btnText').textContent = '按住说话';
+
+  if (error && !text) {
+    if (error === 'no-speech') {
+      showResult('err', '没有听到声音，请靠近麦克风大声说');
+    } else if (error === 'not-allowed') {
+      showResult('err', '麦克风权限被拒绝');
+    } else {
+      showResult('err', '识别出错：' + error);
+    }
+    return;
+  }
+
+  if (!text || !text.trim()) {
+    showResult('err', '没有识别到内容，请再说一次');
+    return;
+  }
+
+  evaluate(text.trim());
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  评估发音
+// ════════════════════════════════════════════════════════════════════════════
+function normalize(s) {
+  return s.toLowerCase().replace(/[^a-z\s']/g, '').trim();
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n; if (n === 0) return m;
+  const dp = Array.from({length: m+1}, () => Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function evaluate(spoken) {
+  const phrase = PHRASES_DB[currentLevel][currentIndex];
+  const targetNorm = normalize(phrase.en);
+  const spokenNorm = normalize(spoken);
+  const targetWords = targetNorm.split(/\s+/);
+  const spokenWords = spokenNorm.split(/\s+/);
+
+  let matched = 0;
+  const missed = [];
+  targetWords.forEach(w => {
+    if (spokenWords.includes(w)) matched++;
+    else missed.push(w);
+  });
+
+  const accuracy = targetWords.length > 0 ? matched / targetWords.length : 0;
+  const distance = levenshtein(spokenNorm, targetNorm);
+  const len = Math.max(spokenNorm.length, targetNorm.length);
+  const similarity = len > 0 ? 1 - distance / len : 0;
+
+  if (accuracy >= 0.75 && similarity >= 0.6) {
+    showResult('pass', spoken, phrase, accuracy);
+    recordPass(currentIndex);
+    passedToday++;
+    updateProgress();
+    updateCheckIcon();
+  } else if (accuracy >= 0.4 || similarity >= 0.4) {
+    showResult('maybe', spoken, phrase, accuracy, missed);
+  } else {
+    showResult('fail', spoken, phrase, accuracy, missed);
+  }
+}
+
+function showResult(type, spoken, phrase, accuracy, missed) {
+  const box = document.getElementById('resultBox');
+  const label = document.getElementById('resultLabel');
+  const content = document.getElementById('resultContent');
+  box.className = `result-box result-${type} show`;
+  const accPct = Math.round((accuracy || 0) * 100);
+
+  if (type === 'pass') {
+    label.innerHTML = '🎉 发音正确！<span class="result-badge">通过</span>';
+    content.innerHTML =
+      `你说：<span class="result-text">${spoken}</span><br>` +
+      `目标：<span class="result-text">${phrase.en}</span><br><br>` +
+      `匹配度 <strong>${accPct}%</strong>，点击「下一句」继续！`;
+  } else if (type === 'maybe') {
+    const missedStr = missed && missed.length ? missed.slice(0,3).join('、') : '';
+    label.innerHTML = '🤔 接近了，再练练<span class="result-badge">继续努力</span>';
+    content.innerHTML =
+      `你说：<span class="result-text">${spoken}</span><br>` +
+      `目标：<span class="result-text">${phrase.en}</span><br>` +
+      `匹配度 <strong>${accPct}%</strong>` +
+      (missedStr ? `<br>注意：<strong>${missedStr}</strong>` : '') +
+      `<div class="result-tip">点击「听标准发音」，对照音标再练一遍</div>`;
+  } else if (type === 'fail') {
+    const missedStr = missed && missed.length ? missed.slice(0,3).join('、') : '';
+    label.innerHTML = '😅 偏差较大<span class="result-badge">多练</span>';
+    content.innerHTML =
+      `你说：<span class="result-text">${spoken || '(未识别)'}</span><br>` +
+      `目标：<span class="result-text">${phrase.en}</span><br>` +
+      `音标：<span class="result-text">${phrase.phonetic}</span>` +
+      (missedStr ? `<br>注意这几个词：<strong>${missedStr}</strong>` : '') +
+      `<div class="result-tip">听标准发音，模仿语调，慢慢说</div>`;
+  } else {
+    label.innerHTML = '⚠️ 注意';
+    content.innerHTML = `<div class="result-tip">${spoken}</div>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  UI 更新
+// ════════════════════════════════════════════════════════════════════════════
+function updateProgress() {
+  const total = PHRASES_DB[currentLevel].length;
+  const passed = getPassedCount();
+  document.getElementById('progressFill').style.width = `${(currentIndex + 1) / total * 100}%`;
+  document.getElementById('progressNum').textContent = `${currentIndex + 1}/${total}`;
+}
+
+function updateCheckIcon() {
+  const icon = document.getElementById('checkIcon');
+  if (isPassed(currentIndex)) icon.classList.add('show');
+  else icon.classList.remove('show');
+}
+
+function loadPhrase(index) {
+  const p = PHRASES_DB[currentLevel][index];
+  document.getElementById('phraseEn').textContent = p.en;
+  document.getElementById('phrasePhonetic').textContent = p.phonetic;
+  document.getElementById('phraseCn').textContent = p.cn;
+  document.getElementById('phraseScene').textContent = p.scene;
+  document.getElementById('dayBadge').textContent = `第 ${index + 1} 句`;
+  document.getElementById('resultBox').className = 'result-box';
+  document.getElementById('btnRecord').className = 'btn-record idle';
+  document.getElementById('btnText').textContent = '按住说话';
+  document.getElementById('levelName').textContent = LEVEL_NAMES[currentLevel];
+  document.getElementById('lvText').textContent = LEVEL_SHORT[currentLevel];
+  updateProgress();
+  updateCheckIcon();
+}
+
+function nextPhrase() {
+  const total = PHRASES_DB[currentLevel].length;
+  if (currentIndex < total - 1) {
+    currentIndex++;
+    state.index = currentIndex;
+    saveState();
+    loadPhrase(currentIndex);
+  } else if (getPassedCount() >= total * 0.8) {
+    // 本级别完成80%以上，提示升级
+    if (currentLevel < 3) {
+      if (confirm(`恭喜！你已通关「${LEVEL_NAMES[currentLevel]}」！\n\n是否进入「${LEVEL_NAMES[currentLevel + 1]}」？`)) {
+        currentLevel++;
+        currentIndex = 0;
+        state.level = currentLevel;
+        state.index = 0;
+        saveState();
+        loadPhrase(0);
+      }
+    }
+  }
+}
+
+function prevPhrase() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    state.index = currentIndex;
+    saveState();
+    loadPhrase(currentIndex);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  难度选择
+// ════════════════════════════════════════════════════════════════════════════
+function showLevelSelect() {
+  document.getElementById('levelOverlay').classList.add('show');
+}
+
+function selectLevel(lv) {
+  currentLevel = lv;
+  currentIndex = 0;
+  state.level = lv;
+  state.index = 0;
+  saveState();
+  document.getElementById('levelOverlay').classList.remove('show');
+  loadPhrase(0);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  统计
+// ════════════════════════════════════════════════════════════════════════════
+function showStats() {
+  checkNewDay();
+  document.getElementById('statLevel').textContent = LEVEL_NAMES[currentLevel];
+  document.getElementById('statPassed').textContent = getPassedCount() + ' 句';
+  document.getElementById('statProgress').textContent = `${currentIndex + 1} / ${PHRASES_DB[currentLevel].length}`;
+  document.getElementById('statStreak').textContent = (state.streak || 0) + ' 天';
+  document.getElementById('statToday').textContent = (state.todayPassed || 0) + ' 句';
+  document.getElementById('statsOverlay').classList.add('show');
+}
+
+function closeStats() {
+  document.getElementById('statsOverlay').classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  启动
+// ════════════════════════════════════════════════════════════════════════════
+checkNewDay();
+document.getElementById('btnRecord').disabled = true;
+loadPhrase(currentIndex);
+
+// 检查浏览器支持
+if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+  document.getElementById('guideText').innerHTML =
+    '⚠️ 你的浏览器不支持语音识别。<br><br>请用 Chrome 或 Safari 浏览器打开本页面。';
+  document.getElementById('btnGrant').style.display = 'none';
+}
+</script>
+</body>
+</html>
